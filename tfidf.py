@@ -1,7 +1,5 @@
 import json
-from pprint import pprint
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.feature_selection import SelectPercentile
 
 # Leo el archivo
 with open('chats.json', encoding='utf8') as file:
