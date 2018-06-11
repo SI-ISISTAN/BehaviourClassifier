@@ -66,17 +66,18 @@ def load_embeddings(txt_dir):
     return embedding_dict, content
 
 
-def convert_words_into_embeddings(messages, content, embeddings_dict):
-    def get_embeddings(ge_word_list, ge_content, ge_embeddings_dict):
-        return list(map(lambda word: replace_word(ge_content, ge_embeddings_dict, word), ge_word_list))
-
-    def replace_word(rw_content, rw_embeddings_dict, rw_word):
+def replace_word(rw_content, rw_embeddings_dict, rw_word):
         try:
             embedding = format_embedding_line(rw_content[rw_embeddings_dict[rw_word]])
         except KeyError:
             embedding = np.zeros((300,))
 
         return embedding
+
+
+def convert_words_into_embeddings(messages, content, embeddings_dict):
+    def get_embeddings(ge_word_list, ge_content, ge_embeddings_dict):
+        return list(map(lambda word: replace_word(ge_content, ge_embeddings_dict, word), ge_word_list))
 
     print('Se convirtieron las palabras al correspondiente embedding')
 
@@ -119,7 +120,17 @@ def generate_tuples_list(messages, tfidf_values, embeddings):
     tuples_list = list(map(lambda tupla: (tupla[0], tupla[1], weight_embeddings(tupla[1], tupla[2])), tuples_list))
     final_embeddings = list(map(lambda tupla: np.mean(tupla[2], axis=0), tuples_list))
 
-    return final_embeddings
+    return np.array(final_embeddings)
 
 
+# Genera un embedding para el string ingresado
+def generate_embedding_from_sentence(sentence, content, embeddings_dict):
+    word_list = sentence.split()
+    embeddings = convert_words_into_embeddings([word_list], content, embeddings_dict)[0]
+    tfidf = obtain_tfidf_values([sentence]).data
 
+    weighted_embeddings = []
+    for i in range(0, len(tfidf)):
+        weighted_embeddings.append(np.multiply(embeddings[i], tfidf[i]))
+
+    return [np.mean(np.array(weighted_embeddings), axis=0)]
