@@ -34,7 +34,11 @@ def load_data(json_dir):
     # A partir del texto, elimino signos de puntuación y aplico stemming
     # messages = list(map(lambda x: stem_words(delete_punctuation(x.get('text').split())), msg_list))
     messages = list(map(lambda x: delete_punctuation(x.get('text').split()), msg_list))
+
+    # Genero un array con las clases correspondientes a cada mensaje
     classes = list(map(lambda x: x.get('IPA'), msg_list))
+    classes = np.array(list(map(lambda x: x if x is not None else '-1', classes)))
+    classes = classes.astype(np.int)
 
     print('Se cargó el archivo:', json_dir)
 
@@ -70,7 +74,7 @@ def convert_words_into_embeddings(messages, content, embeddings_dict):
         try:
             embedding = format_embedding_line(rw_content[rw_embeddings_dict[rw_word]])
         except KeyError:
-            embedding = np.zeros((1, 300))
+            embedding = np.zeros((300,))
 
         return embedding
 
@@ -92,3 +96,30 @@ def format_embedding_line(raw_line):
     elements = elements.astype(np.float)
 
     return elements
+
+
+def generate_tuples_list(messages, tfidf_values, embeddings):
+    def weight_embeddings(tfidf_list, embedding_list):
+        new_embeddings = []
+        for j in range(0, len(tfidf_list)):
+            tfidf = tfidf_list[j]
+            embedding = np.multiply(embedding_list[j], tfidf)
+            new_embeddings.append(embedding)
+        return new_embeddings
+
+    tuples_list = []
+    for i in range(0, len(messages)):
+        """
+            El primer elemento de la tupla es una lista de string (palabras)
+            El segundo elemento es un np.array con los valores tfidf asociados
+            El tercer elemento es una lista de np.array correspondiendo cada uno al embedding de cada palabra
+        """
+        tuples_list.append((messages[i], tfidf_values[i].data, embeddings[i]))
+
+    tuples_list = list(map(lambda tupla: (tupla[0], tupla[1], weight_embeddings(tupla[1], tupla[2])), tuples_list))
+    final_embeddings = list(map(lambda tupla: np.mean(tupla[2], axis=0), tuples_list))
+
+    return final_embeddings
+
+
+
