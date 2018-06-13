@@ -9,12 +9,17 @@ tfidf = preprocessingNUEVO.obtain_tfidf_values(messages)
 embeddings = preprocessingNUEVO.obtain_embeddings_from_conversation(messages, embeddings_dict)
 sentences2vec = preprocessingNUEVO.obtain_sentences2vec(tfidf, embeddings)
 
-# classifier = GaussianNB()
-# classifier.fit(sentences2vec, classes)
+classifier = GaussianNB()
+print('Se empezó a entrenar el clasificador')
+classifier.fit(sentences2vec, classes)
+
+sentence_predict = preprocessingNUEVO.obtain_embeddings_from_conversation(['hola como andas'], embeddings_dict)
+sentence_tfidf = preprocessingNUEVO.obtain_tfidf_values(sentence_predict)
 
 
+# TODO: preparar la traducción de string a sentence2vec
+# TODO: fijarse de usar siempre el mismo vectorizer
 
-#
 # messages_json, classes_json = preprocessing.load_data('chats-lotr.json')
 # tfidf_values_json = preprocessing.obtain_tfidf_values(list(map(lambda msg_list: ' '.join(msg_list), messages_json)))
 # embeddings_json = preprocessing.convert_words_into_embeddings(messages_json, content, embeddings_dict)

@@ -84,4 +84,4 @@ def obtain_sentences2vec(tfidf, embeddings):
     for embedding in embeddings:
         sentences2vec.append(np.mean(np.array(embedding), axis=0))
 
-    return sentences2vec
+    return np.vstack(sentences2vec)
