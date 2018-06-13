@@ -46,24 +46,24 @@ def load_data(json_dir):
 
 
 def load_embeddings(txt_dir):
-    # Leo el archivo
-    with open(txt_dir, encoding='utf8') as file:
-        content = file.readlines()
-    del content[0]  # La primer línea del TXT sólo indica las dimensiones de los embeddings
-
-    print('Se cargó el archivo:', txt_dir)
-
-    # Genero un diccionario cuya clave es el string con la palabra, y el valor el índice de la palabra buscada
     embedding_dict = {}
     id_embedding = 0
-    for word in list(map(lambda x: x.split()[0], content)):
-        embedding_dict[word] = id_embedding
-        id_embedding += 1
+
+    with open(txt_dir, encoding='utf8') as file:
+        file.readline() # Para remover el encabezado
+        for line in file:
+            separator = line.index(' ')
+            key = line[0:separator]
+            values = np.fromstring(line[separator + 1:], dtype=float, sep=' ')
+            embedding_dict[key] = values
+
+            id_embedding += 1
+            if id_embedding % 10000 == 0:
+                print(id_embedding, 'de +/- 1000000')
 
     print('Se generó el índice de embeddings')
 
-    # Retorno el diccionario, y la lista de líneas que representa el TXT
-    return embedding_dict, content
+    return embedding_dict
 
 
 def replace_word(rw_content, rw_embeddings_dict, rw_word):
@@ -134,3 +134,27 @@ def generate_embedding_from_sentence(sentence, content, embeddings_dict):
         weighted_embeddings.append(np.multiply(embeddings[i], tfidf[i]))
 
     return [np.mean(np.array(weighted_embeddings), axis=0)]
+
+
+def load_data_arff(arff_dir):
+    def split_arff_line(line):
+        separator = line.index(',')
+
+        categoria = int(line[0:separator].replace('\'', ''))
+        mensajes = list(map(lambda palabra: palabra.replace('\'', ''), line[separator+1:].split()))
+
+        return categoria, mensajes
+
+    with open(arff_dir, encoding='utf8') as file:
+        content = file.readlines()
+
+    # Borro el encabezado del ARFF
+    del content[0:6]
+
+    aux = list(map(lambda line: split_arff_line(line), content))
+
+    messages = list(map(lambda tupla: tupla[1], aux))
+    classes = np.array(list(map(lambda tupla: tupla[0], aux)))
+    classes.astype(np.int)
+
+    return messages, classes
