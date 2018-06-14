@@ -1,48 +1,5 @@
-import json
-import string
 import numpy as np
-
-from nltk.stem import SnowballStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
-
-
-def load_data(json_dir):
-    def delete_punctuation(words_list):
-        # Armo tabla para mapear los signos de puntuación a None -> O sea para eliminarlos
-        tabla_puntuacion = str.maketrans({key: None for key in string.punctuation})
-        return list(map(lambda x: x.translate(tabla_puntuacion), words_list))
-
-    def stem_words(words_list):
-        # Armo un stemmer para reducir las palabras a su raíz y se lo aplico a la lista
-        stemmer = SnowballStemmer('spanish')
-        return list(map(lambda x: stemmer.stem(x), words_list))
-
-    # Leo el archivo
-    with open(json_dir, encoding='utf8') as file:
-        content = file.readlines()
-
-    # Cargo todos los chats en una lista
-    msg_list = []
-    for elem in content:
-        current_line = json.loads(elem)
-        for chat in current_line.get('chats'):
-            msg_list.append(chat)
-
-    # Filtro los mensajes que están etiquetados
-    msg_list = list(filter(lambda x: 'IPA' in x.keys(), msg_list))
-
-    # A partir del texto, elimino signos de puntuación y aplico stemming
-    # messages = list(map(lambda x: stem_words(delete_punctuation(x.get('text').split())), msg_list))
-    messages = list(map(lambda x: delete_punctuation(x.get('text').split()), msg_list))
-
-    # Genero un array con las clases correspondientes a cada mensaje
-    classes = list(map(lambda x: x.get('IPA'), msg_list))
-    classes = np.array(list(map(lambda x: x if x is not None else '-1', classes)))
-    classes = classes.astype(np.int)
-
-    print('Se cargó el archivo:', json_dir)
-
-    return messages, classes
 
 
 def load_embeddings(txt_dir):
@@ -50,7 +7,7 @@ def load_embeddings(txt_dir):
     id_embedding = 0
 
     with open(txt_dir, encoding='utf8') as file:
-        file.readline() # Para remover el encabezado
+        file.readline()  # Para remover el encabezado
         for line in file:
             separator = line.index(' ')
             key = line[0:separator]
@@ -58,103 +15,99 @@ def load_embeddings(txt_dir):
             embedding_dict[key] = values
 
             id_embedding += 1
-            if id_embedding % 10000 == 0:
-                print(id_embedding, 'de +/- 1000000')
+            if id_embedding % 100000 == 0:
+                print('Van', id_embedding, 'de aprox. 1000000')
 
     print('Se generó el índice de embeddings')
 
     return embedding_dict
 
 
-def replace_word(rw_content, rw_embeddings_dict, rw_word):
+def load_data(file_dir):
+    def split_line(line):
+        aux = line.split('\t')
+        return aux[0], aux[1]
+
+    with open(file_dir, mode='r') as file:
+        content = file.read().splitlines()
+
+    content = list(map(lambda line: split_line(line), content))
+    classes = np.array(list(map(lambda tupla: int(tupla[0]), content)))
+    messages = list(map(lambda tupla: tupla[1], content))
+
+    print('Se cargó el archivo:', file_dir)
+
+    return classes, messages
+
+
+def generate_tfidf(messages):
+    vectorizer = TfidfVectorizer(token_pattern=r"(?u)\b\w\w*\b")
+    sparse_matrix = vectorizer.fit_transform(messages)
+
+    tfidf = []
+    for i in range(0, sparse_matrix.shape[0]):
+        word_list = messages[i].split()
+        word_list = list(map(lambda word: vectorizer.vocabulary_[word], word_list))
+        word_list = list(map(lambda word: sparse_matrix.indices.tolist().index(word), word_list))
+        word_list = np.array(list(map(lambda word: sparse_matrix.data[word], word_list)))
+
+        tfidf.append(word_list)
+
+    print('Se terminó de armar la estructura de tfidf')
+
+    return tfidf, vectorizer
+
+
+def obtain_embeddings_from_conversation(messages, embeddings_dict):
+    def get_embedding(word):
         try:
-            embedding = format_embedding_line(rw_content[rw_embeddings_dict[rw_word]])
+            return embeddings_dict[word]
         except KeyError:
-            embedding = np.zeros((300,))
+            return np.zeros((300,))
 
-        return embedding
+    def obtain_embeddings_from_sentence(sentence):
+        return list(map(lambda word: get_embedding(word), sentence.split()))
 
-
-def convert_words_into_embeddings(messages, content, embeddings_dict):
-    def get_embeddings(ge_word_list, ge_content, ge_embeddings_dict):
-        return list(map(lambda word: replace_word(ge_content, ge_embeddings_dict, word), ge_word_list))
-
-    print('Se convirtieron las palabras al correspondiente embedding')
-
-    return list(map(lambda word_list: get_embeddings(word_list, content, embeddings_dict), messages))
+    return list(map(lambda msg: obtain_embeddings_from_sentence(msg), messages))
 
 
-def obtain_tfidf_values(document_list):
-    vectorizer = TfidfVectorizer()
-    return vectorizer.fit_transform(document_list)
-
-
-def format_embedding_line(raw_line):
-    elements = raw_line.split()
-    del elements[0]
-
-    elements = np.array(elements)
-    elements = elements.astype(np.float)
-
-    return elements
-
-
-def generate_tuples_list(messages, tfidf_values, embeddings):
-    def weight_embeddings(tfidf_list, embedding_list):
-        new_embeddings = []
-        for j in range(0, len(tfidf_list)):
-            tfidf = tfidf_list[j]
-            embedding = np.multiply(embedding_list[j], tfidf)
-            new_embeddings.append(embedding)
-        return new_embeddings
-
-    tuples_list = []
-    for i in range(0, len(messages)):
-        """
-            El primer elemento de la tupla es una lista de string (palabras)
-            El segundo elemento es un np.array con los valores tfidf asociados
-            El tercer elemento es una lista de np.array correspondiendo cada uno al embedding de cada palabra
-        """
-        tuples_list.append((messages[i], tfidf_values[i].data, embeddings[i]))
-
-    tuples_list = list(map(lambda tupla: (tupla[0], tupla[1], weight_embeddings(tupla[1], tupla[2])), tuples_list))
-    final_embeddings = list(map(lambda tupla: np.mean(tupla[2], axis=0), tuples_list))
-
-    return np.array(final_embeddings)
-
-
-# Genera un embedding para el string ingresado
-def generate_embedding_from_sentence(sentence, content, embeddings_dict):
-    word_list = sentence.split()
-    embeddings = convert_words_into_embeddings([word_list], content, embeddings_dict)[0]
-    tfidf = obtain_tfidf_values([sentence]).data
-
-    weighted_embeddings = []
+def obtain_sentences2vec(tfidf, embeddings):
+    # Multiplico cada embedding por su correspondiente TFIDF
     for i in range(0, len(tfidf)):
-        weighted_embeddings.append(np.multiply(embeddings[i], tfidf[i]))
+        for j in range(0, len(tfidf[i])):
+            embeddings[i][j] = np.multiply(embeddings[i][j], tfidf[i][j])
 
-    return [np.mean(np.array(weighted_embeddings), axis=0)]
+    print('Se arranca a armar el sentences2vec')
+
+    # Para cada oración, armo el promedio de los vectores de cada palabra
+    sentences2vec = []  # Sería una lista de numpy array con los vectores de cada ORACION
+    for embedding in embeddings:
+        sentences2vec.append(np.mean(np.array(embedding), axis=0))
+
+    return np.vstack(sentences2vec)
 
 
-def load_data_arff(arff_dir):
-    def split_arff_line(line):
-        separator = line.index(',')
+def get_embedding_for_predict(sentence, vectorizer, embeddings_dict):
+    def get_tfidf_index(word, vocabulary):
+        try:
+            return vocabulary[word]
+        except KeyError:
+            return -1
 
-        categoria = int(line[0:separator].replace('\'', ''))
-        mensajes = list(map(lambda palabra: palabra.replace('\'', ''), line[separator+1:].split()))
+    def get_tfidf_coef(word_index, matrix):
+        try:
+            return matrix.data[matrix.indices.tolist().index(word_index)]
+        except ValueError:
+            return np.float64(1.0)
 
-        return categoria, mensajes
+    matrix = vectorizer.transform([sentence])
+    sentence_embedding = obtain_embeddings_from_conversation([sentence], embeddings_dict)
+    sentence_tfidf = list(map(lambda word: get_tfidf_index(word, vectorizer.vocabulary_), sentence.split()))
+    sentence_tfidf = list(map(lambda index: get_tfidf_coef(index, matrix), sentence_tfidf))
 
-    with open(arff_dir, encoding='utf8') as file:
-        content = file.readlines()
+    for i in range(0, len(sentence_tfidf)):
+        sentence_embedding[0][i] = np.multiply(sentence_embedding[0][i], sentence_tfidf[i])
 
-    # Borro el encabezado del ARFF
-    del content[0:6]
+    final_embedding = np.mean(np.vstack(sentence_embedding[0]), axis=0).reshape(1, 300)
 
-    aux = list(map(lambda line: split_arff_line(line), content))
-
-    messages = list(map(lambda tupla: tupla[1], aux))
-    classes = np.array(list(map(lambda tupla: tupla[0], aux)))
-    classes.astype(np.int)
-
-    return messages, classes
+    return final_embedding

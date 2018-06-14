@@ -1,24 +1,40 @@
 import preprocessing
-import preprocessingNUEVO
 
 from sklearn.naive_bayes import GaussianNB
+import numpy as np
 
-embeddings_dict = preprocessingNUEVO.load_embeddings('datasets/SBW-vectors-300-min5.txt')
-classes, messages = preprocessingNUEVO.load_data('datasets/messages-hangouts.txt')
-tfidf = preprocessingNUEVO.obtain_tfidf_values(messages)
-embeddings = preprocessingNUEVO.obtain_embeddings_from_conversation(messages, embeddings_dict)
-sentences2vec = preprocessingNUEVO.obtain_sentences2vec(tfidf, embeddings)
+embeddings_dict = preprocessing.load_embeddings('datasets/SBW-vectors-300-min5.txt')
+classes, messages = preprocessing.load_data('datasets/messages-hangouts.txt')
+tfidf, vectorizer = preprocessing.generate_tfidf(messages)
+embeddings = preprocessing.obtain_embeddings_from_conversation(messages, embeddings_dict)
+sentences2vec = preprocessing.obtain_sentences2vec(tfidf, embeddings)
 
 classifier = GaussianNB()
 print('Se empezó a entrenar el clasificador')
 classifier.fit(sentences2vec, classes)
 
-sentence_predict = preprocessingNUEVO.obtain_embeddings_from_conversation(['hola como andas'], embeddings_dict)
-sentence_tfidf = preprocessingNUEVO.obtain_tfidf_values(sentence_predict)
+
+def get_tfidf_index(word, vocabulary):
+    try:
+        return vocabulary[word]
+    except KeyError:
+        return -1
 
 
-# TODO: preparar la traducción de string a sentence2vec
+def get_tfidf_coef(word_index, matrix):
+    try:
+        return matrix.data[matrix.indices.tolist().index(word_index)]
+    except ValueError:
+        return np.float64(1.0)
+
+
+sentence = 'decime como se hace esto'
+
+print(classifier.predict(preprocessing.get_embedding_for_predict('hola como andas', vectorizer, embeddings_dict)))
+
+# TODO: empaquetar la traducción
 # TODO: fijarse de usar siempre el mismo vectorizer
+# TODO: otra feature para agregar es pulir la oración a clasificar (por ejemplo volar las puntuaciones, acentos, etc.)
 
 # messages_json, classes_json = preprocessing.load_data('chats-lotr.json')
 # tfidf_values_json = preprocessing.obtain_tfidf_values(list(map(lambda msg_list: ' '.join(msg_list), messages_json)))
