@@ -1,4 +1,8 @@
 import numpy as np
+import nltk
+import corrector
+from num2words import num2words
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 
@@ -28,7 +32,7 @@ def load_data(file_dir):
         aux = line.split('\t')
         return aux[0], aux[1]
 
-    with open(file_dir, mode='r') as file:
+    with open(file_dir, mode='r', encoding='utf8') as file:
         content = file.read().splitlines()
 
     content = list(map(lambda line: split_line(line), content))
@@ -59,16 +63,38 @@ def generate_tfidf(messages):
 
 
 def obtain_embeddings_from_conversation(messages, embeddings_dict):
+    palabras_no_encontradas = []
+
+    stemmer = nltk.stem.SnowballStemmer('spanish')
+    # corrector_ortografico = corrector.SpellCorrector('spanish.txt')
+    corrector_ortografico = corrector.SpellCorrector('espanol.txt')
+
     def get_embedding(word):
         try:
             return embeddings_dict[word]
         except KeyError:
-            return np.zeros((300,))
+            try:
+                return embeddings_dict[stemmer.stem(word)]
+            except KeyError:
+                try:
+                    return embeddings_dict[corrector_ortografico.correct(word)]
+                except KeyError:
+                    try:
+                        return embeddings_dict[corrector_ortografico.correct(stemmer.stem(word))]
+                    except KeyError:
+                        try:
+                            return embeddings_dict[num2words(word, lang='es')]
+                        except (KeyError, SyntaxError, NameError, TypeError):
+                            nonlocal palabras_no_encontradas
+
+                            palabras_no_encontradas.append(word)
+
+                            return np.zeros((300,))
 
     def obtain_embeddings_from_sentence(sentence):
         return list(map(lambda word: get_embedding(word), sentence.split()))
 
-    return list(map(lambda msg: obtain_embeddings_from_sentence(msg), messages))
+    return list(map(lambda msg: obtain_embeddings_from_sentence(msg), messages)), palabras_no_encontradas
 
 
 def obtain_sentences2vec(tfidf, embeddings):
@@ -111,3 +137,25 @@ def get_embedding_for_predict(sentence, vectorizer, embeddings_dict):
     final_embedding = np.mean(np.vstack(sentence_embedding[0]), axis=0).reshape(1, 300)
 
     return final_embedding
+
+
+def get_reaccion(conducta):
+    if conducta < 1 or conducta > 12:
+        raise ValueError('Las conductas tienen un rango de entre 1 y 12. Valor ingresado: ->', conducta)
+
+    mapeo_conducta_reaccion = {
+        1: 'Positiva',
+        2: 'Positiva',
+        3: 'Positiva',
+        4: 'Responde',
+        5: 'Responde',
+        6: 'Responde',
+        7: 'Pregunta',
+        8: 'Pregunta',
+        9: 'Pregunta',
+        10: 'Negativa',
+        11: 'Negativa',
+        12: 'Negativa',
+    }
+
+    return mapeo_conducta_reaccion[conducta]
