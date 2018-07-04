@@ -62,29 +62,63 @@ def generate_tfidf(messages):
     return tfidf, vectorizer
 
 
-def obtain_embeddings_from_conversation(messages, embeddings_dict):
+# def obtain_embeddings_from_conversation(messages, embeddings_dict):
+#     palabras_no_encontradas = []
+#
+#     stemmer = nltk.stem.SnowballStemmer('spanish')
+#     # corrector_ortografico = corrector.SpellCorrector('spanish.txt')
+#     corrector_ortografico = corrector.SpellCorrector('lib/espanol.txt')
+#
+#     def get_embedding(word):
+#         try:
+#             return embeddings_dict[word]
+#         except KeyError:
+#             try:
+#                 return embeddings_dict[stemmer.stem(word)]
+#             except KeyError:
+#                 try:
+#                     return embeddings_dict[corrector_ortografico.correct(word)]
+#                 except KeyError:
+#                     try:
+#                         return embeddings_dict[corrector_ortografico.correct(stemmer.stem(word))]
+#                     except KeyError:
+#                         try:
+#                             return embeddings_dict[num2words(word, lang='es')]
+#                         except (KeyError, SyntaxError, NameError, TypeError):
+#                             nonlocal palabras_no_encontradas
+#
+#                             palabras_no_encontradas.append(word)
+#
+#                             return np.zeros((300,))
+#
+#     def obtain_embeddings_from_sentence(sentence):
+#         return list(map(lambda word: get_embedding(word), sentence.split()))
+#
+#     return list(map(lambda msg: obtain_embeddings_from_sentence(msg), messages)), palabras_no_encontradas
+
+def obtain_embeddings_from_conversation(messages, embeddings_db):
     palabras_no_encontradas = []
 
     stemmer = nltk.stem.SnowballStemmer('spanish')
     # corrector_ortografico = corrector.SpellCorrector('spanish.txt')
-    corrector_ortografico = corrector.SpellCorrector('espanol.txt')
+    corrector_ortografico = corrector.SpellCorrector('lib/espanol.txt')
 
     def get_embedding(word):
         try:
-            return embeddings_dict[word]
-        except KeyError:
+            return embeddings_db.get(word)
+        except TypeError:
             try:
-                return embeddings_dict[stemmer.stem(word)]
-            except KeyError:
+                return embeddings_db.get(stemmer.stem(word))
+            except TypeError:
                 try:
-                    return embeddings_dict[corrector_ortografico.correct(word)]
-                except KeyError:
+                    return embeddings_db.get(corrector_ortografico.correct(word))
+                except TypeError:
                     try:
-                        return embeddings_dict[corrector_ortografico.correct(stemmer.stem(word))]
-                    except KeyError:
+                        return embeddings_db.get(corrector_ortografico.correct(stemmer.stem(word)))
+                    except TypeError:
                         try:
-                            return embeddings_dict[num2words(word, lang='es')]
-                        except (KeyError, SyntaxError, NameError, TypeError):
+                            return embeddings_db.get(num2words(word, lang='es'))
+                        except (TypeError, SyntaxError, NameError):
                             nonlocal palabras_no_encontradas
 
                             palabras_no_encontradas.append(word)
@@ -97,11 +131,14 @@ def obtain_embeddings_from_conversation(messages, embeddings_dict):
     return list(map(lambda msg: obtain_embeddings_from_sentence(msg), messages)), palabras_no_encontradas
 
 
-def obtain_sentences2vec(tfidf, embeddings):
+def obtain_sentences2vec(tfidf_list, embeddings):
+    if tfidf_list is None:
+        return np.vstack(list(map(lambda x: np.mean(np.array(x), axis=0), embeddings)))
+
     # Multiplico cada embedding por su correspondiente TFIDF
-    for i in range(0, len(tfidf)):
-        for j in range(0, len(tfidf[i])):
-            embeddings[i][j] = np.multiply(embeddings[i][j], tfidf[i][j])
+    for i in range(0, len(tfidf_list)):
+        for j in range(0, len(tfidf_list[i])):
+            embeddings[i][j] = np.multiply(embeddings[i][j], tfidf_list[i][j])
 
     print('Se arranca a armar el sentences2vec')
 
@@ -113,7 +150,7 @@ def obtain_sentences2vec(tfidf, embeddings):
     return np.vstack(sentences2vec)
 
 
-def get_embedding_for_predict(sentence, vectorizer, embeddings_dict):
+def get_embedding_from_sentence(sentence, vectorizer, embeddings_db):
     def get_tfidf_index(word, vocabulary):
         try:
             return vocabulary[word]
@@ -126,13 +163,15 @@ def get_embedding_for_predict(sentence, vectorizer, embeddings_dict):
         except ValueError:
             return np.float64(1.0)
 
-    matrix = vectorizer.transform([sentence])
-    sentence_embedding = obtain_embeddings_from_conversation([sentence], embeddings_dict)
-    sentence_tfidf = list(map(lambda word: get_tfidf_index(word, vectorizer.vocabulary_), sentence.split()))
-    sentence_tfidf = list(map(lambda index: get_tfidf_coef(index, matrix), sentence_tfidf))
+    sentence_embedding = obtain_embeddings_from_conversation([sentence], embeddings_db)[0]
 
-    for i in range(0, len(sentence_tfidf)):
-        sentence_embedding[0][i] = np.multiply(sentence_embedding[0][i], sentence_tfidf[i])
+    if vectorizer is not None:
+        matrix = vectorizer.transform([sentence])
+        sentence_tfidf = list(map(lambda word: get_tfidf_index(word, vectorizer.vocabulary_), sentence.split()))
+        sentence_tfidf = list(map(lambda index: get_tfidf_coef(index, matrix), sentence_tfidf))
+
+        for i in range(0, len(sentence_tfidf)):
+            sentence_embedding[0][i] = np.multiply(sentence_embedding[0][i], sentence_tfidf[i])
 
     final_embedding = np.mean(np.vstack(sentence_embedding[0]), axis=0).reshape(1, 300)
 
@@ -159,3 +198,28 @@ def get_reaccion(conducta):
     }
 
     return mapeo_conducta_reaccion[conducta]
+
+
+def format_classifier_input(csv_dir):
+    from keras.utils import np_utils
+
+    with open(csv_dir, mode='r') as file:
+        raw_content = file.readlines()
+
+    del raw_content[0]
+    raw_content = list(map(lambda line: line.split(','), raw_content))
+
+    reaction_dict = {'Positiva': 0, 'Pregunta': 1, 'Responde': 2, 'Negativa': 3}
+
+    reacciones = list(map(lambda line: np.float32(reaction_dict[line[0]]), raw_content))
+    conductas = list(map(lambda line: np.float32(line[1]) - 1.0, raw_content))
+    mensajes = list(map(lambda line: np.fromstring(line[2], dtype=np.float32, sep=';'), raw_content))
+
+    reacciones = np_utils.to_categorical(reacciones, num_classes=4)
+    conductas = np_utils.to_categorical(conductas, num_classes=12)
+    mensajes = np.array(mensajes)
+
+    reacciones_mensajes = list(map(lambda reaccion, mensaje: np.append(reaccion, mensaje), reacciones, mensajes))
+    reacciones_mensajes = np.array(reacciones_mensajes)
+
+    return reacciones, conductas, mensajes, reacciones_mensajes

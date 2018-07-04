@@ -65,7 +65,7 @@
 import pandas as pd
 
 # Cargo el CSV con los mensajes
-df = pd.read_csv('hangouts-augmented-v5-contfidf.csv', sep=',')
+df = pd.read_csv('datasets/preprocessed/hangouts-augmented5.csv', sep=',')
 
 # Mezclo las instancias
 df = df.sample(frac=1).reset_index(drop=True)
@@ -130,4 +130,4 @@ df_nuevo = df_1.append(df_2).append(df_3).append(df_4)\
     .append(df_9).append(df_10).append(df_11).append(df_12)
 df_nuevo = df_nuevo.sample(frac=1).reset_index(drop=True)
 
-df_nuevo.to_csv('hangouts-augmented3.csv', sep=',', index=False)
+df_nuevo.to_csv('datasets/preprocessed/hangouts-augmented5.csv', sep=',', index=False)
