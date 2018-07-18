@@ -1,38 +1,35 @@
 from keras.models import load_model
 
-import numpy as np
 import preprocessing
-import database_embeddings as demb
+import database_embeddings as embdb
+import numpy as np
 
 
-# Retorna el vector softmax discretizado
-def one_hot(softmax_vector_output):
-    one_hot_vector = np.zeros(softmax_vector_output.shape, dtype=np.float32)
-    one_hot_vector[np.argmax(softmax_vector_output, axis=0)] = 1.0
+class ReactionNeuralNet:
+    def __init__(self, weights_dir, database_dir):
+        self.model = load_model(weights_dir)
+        self.embeddings = embdb.EmbeddingDatabase(database_dir)
+        self.categorias = {0: 'Negativa', 1: 'Positiva', 2: 'Pregunta', 3: 'Responde'}
 
-    return one_hot_vector
+    def make_prediction(self, raw_text):
+        mensaje_clasificar = preprocessing.get_embedding_from_sentence(raw_text, self.embeddings)
+        mensaje_clasificar = np.reshape(self.model.predict(mensaje_clasificar), (4,))
+        mensaje_clasificar = preprocessing.one_hot(mensaje_clasificar)
+
+        return self.categorias.get(int(np.argmax(mensaje_clasificar)))
 
 
 # Ruta de los parámetros
-weights_dir = 'result-studio/clasificador-reacciones_49/model.h5'
+# weights_dir = 'result-studio/clasificador-reacciones_49/model.h5'
 
 # Cargo el .h5 con el modelo entrenado
-model = load_model(weights_dir)
+# model = load_model(weights_dir)
 
 # Obtengo la conexión con la base de los embeddings
-embeddings_db = demb.EmbeddingDatabase('embeddings.db')
+# embeddings_db = demb.EmbeddingDatabase('embeddings.db')
 
-# Cargo el dataset
-# classes, messages = preprocessing.load_data('datasets/raw/hangouts-augmented-v2.txt')
-
-# Armo la matriz de tfidf correspondiente al dataset
-# tfidf, vectorizer = preprocessing.generate_tfidf(messages)
-
-mensaje_clasificar = 'hola como andas'
-mensaje_clasificar = preprocessing.get_embedding_from_sentence(
-    sentence=mensaje_clasificar, vectorizer=None, embeddings_db=embeddings_db
-)
-
+# Obtengo el embedding asociado al mensaje provisto
+# mensaje_clasificar = preprocessing.get_embedding_from_sentence('hola como andas', embeddings_db)
 
 # prediction = np.reshape(model.predict(mensaje_clasificar), (4,))
 # prediction = one_hot(softmax_pred)

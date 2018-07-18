@@ -150,7 +150,7 @@ def obtain_sentences2vec(tfidf_list, embeddings):
     return np.vstack(sentences2vec)
 
 
-def get_embedding_from_sentence(sentence, vectorizer, embeddings_db):
+def get_embedding_from_sentence(sentence, embeddings_db, vectorizer=None):
     def get_tfidf_index(word, vocabulary):
         try:
             return vocabulary[word]
@@ -223,3 +223,10 @@ def format_classifier_input(csv_dir):
     reacciones_mensajes = np.array(reacciones_mensajes)
 
     return reacciones, conductas, mensajes, reacciones_mensajes
+
+
+def one_hot(softmax_vector_output):
+    one_hot_vector = np.zeros(softmax_vector_output.shape, dtype=np.float32)
+    one_hot_vector[np.argmax(softmax_vector_output, axis=0)] = 1.0
+
+    return one_hot_vector
