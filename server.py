@@ -3,16 +3,21 @@ from model import IPANeuralNet
 
 import configuration as conf
 
-neuralnet = IPANeuralNet(conf.directories.get('clf_reacciones'), conf.directories.get('db_embeddings'))
+neuralnet = IPANeuralNet(conf.directories)
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
-app.run(host=conf.server.get('address'), port=conf.server.get('port'))
+
+
+@app.route('/')
+def home():
+    return jsonify(mensaje='que onda bigote')
 
 
 @app.route('/clasificar', methods=['GET', 'POST'])
 def clasificar():
     mensaje_clasificar = request.args.get('mensaje', default='', type=str)
+    conducta = request.args.get('conducta', default=0, type=int)
 
     if mensaje_clasificar == '':
         return jsonify(error='Se debe proveer un mensaje')
@@ -20,8 +25,19 @@ def clasificar():
     if request.method == 'GET':
         return jsonify(
             mensaje=mensaje_clasificar,
-            categoria=neuralnet.make_prediction(mensaje_clasificar)
+            resultado=neuralnet.make_prediction(mensaje_clasificar)
         )
 
+    # Implementar para cuando haya que reentrenar
     if request.method == 'POST':
-        return 'Método POST sin implementar'
+        if conducta == 0:
+            return jsonify(error='Se debe proveer una conducta válida')
+
+        return jsonify(
+            mensaje=mensaje_clasificar,
+            conducta_correcta=conducta,
+            resultado=neuralnet.retrain(mensaje_clasificar, conducta)
+        )
+
+
+app.run(host=conf.server.get('address'), port=conf.server.get('port'))
