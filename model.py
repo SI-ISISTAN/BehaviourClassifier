@@ -5,7 +5,7 @@ import database_embeddings as embdb
 import numpy as np
 
 
-class ReactionNeuralNet:
+class IPANeuralNet:
     def __init__(self, weights_dir, database_dir):
         self.model = load_model(weights_dir)
         self.embeddings = embdb.EmbeddingDatabase(database_dir)
