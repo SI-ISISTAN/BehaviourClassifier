@@ -8,10 +8,35 @@ import numpy as np
 class IPANeuralNet:
     def __init__(self, directories):
         self.clf_reacciones = load_model(directories.get('clf_reacciones'))
+        self.clf_reacciones.compile(optimizer='adadelta', loss='categorical_crossentropy')
+
         self.clf_positiva = load_model(directories.get('clf_positiva'))
+        self.clf_positiva.compile(optimizer='adadelta', loss='categorical_crossentropy')
+
         self.clf_negativa = load_model(directories.get('clf_negativa'))
+        self.clf_negativa.compile(optimizer='adadelta', loss='categorical_crossentropy')
+
         self.clf_pregunta = load_model(directories.get('clf_pregunta'))
+        self.clf_pregunta.compile(optimizer='adadelta', loss='categorical_crossentropy')
+
         self.clf_responde = load_model(directories.get('clf_responde'))
+        self.clf_responde.compile(optimizer='adadelta', loss='categorical_crossentropy')
+
+        # (conducta) -> (reaccion, clasificador_conducta, onehot_reaccion, onehot_conducta)
+        self.mapeo_categoria_reaccion = {
+            1: (1, self.clf_positiva, np.array([[0, 1, 0, 0]], dtype=np.float32), np.array([[1, 0, 0]], dtype=np.float32)),
+            2: (1, self.clf_positiva, np.array([[0, 1, 0, 0]], dtype=np.float32), np.array([[0, 1, 0]], dtype=np.float32)),
+            3: (1, self.clf_positiva, np.array([[0, 1, 0, 0]], dtype=np.float32), np.array([[0, 0, 1]], dtype=np.float32)),
+            4: (3, self.clf_responde, np.array([[0, 0, 0, 1]], dtype=np.float32), np.array([[1, 0, 0]], dtype=np.float32)),
+            5: (3, self.clf_responde, np.array([[0, 0, 0, 1]], dtype=np.float32), np.array([[0, 1, 0]], dtype=np.float32)),
+            6: (3, self.clf_responde, np.array([[0, 0, 0, 1]], dtype=np.float32), np.array([[0, 0, 1]], dtype=np.float32)),
+            7: (2, self.clf_pregunta, np.array([[0, 0, 1, 0]], dtype=np.float32), np.array([[1, 0, 0]], dtype=np.float32)),
+            8: (2, self.clf_pregunta, np.array([[0, 0, 1, 0]], dtype=np.float32), np.array([[0, 1, 0]], dtype=np.float32)),
+            9: (2, self.clf_pregunta, np.array([[0, 0, 1, 0]], dtype=np.float32), np.array([[0, 0, 1]], dtype=np.float32)),
+            10: (0, self.clf_negativa, np.array([[1, 0, 0, 0]], dtype=np.float32), np.array([[1, 0, 0]], dtype=np.float32)),
+            11: (0, self.clf_negativa, np.array([[1, 0, 0, 0]], dtype=np.float32), np.array([[0, 1, 0]], dtype=np.float32)),
+            12: (0, self.clf_negativa, np.array([[1, 0, 0, 0]], dtype=np.float32), np.array([[0, 0, 1]], dtype=np.float32))
+        }
 
         self.embeddings = embdb.EmbeddingDatabase(directories.get('db_embeddings'))
         self.categorias = {
@@ -96,4 +121,17 @@ class IPANeuralNet:
 
         """
 
-        return 'Retrain sin implementar'
+        print('RETRAIN (raw_text, conducta) -> (%s, %s)' % (raw_text, conducta))
+
+        reaccion, clf_conductas, onehot_reaccion, onehot_conducta = self.mapeo_categoria_reaccion[conducta]
+        embedding = preprocessing.get_embedding_from_sentence(raw_text, self.embeddings)
+
+        # Recompilo y reentreno el clasificador de la conducta asociada a la reacción
+        # clf_conductas.compile(optimizer='adadelta', loss='categorical_crossentropy')
+        clf_conductas.fit(embedding, onehot_conducta, epochs=5)
+
+        # Recompilo y reentreno el clasificador de las reacciones
+        # self.clf_reacciones.compile(optimizer='adadelta', loss='categorical_crossentropy')
+        self.clf_reacciones.fit(embedding, onehot_reaccion, epochs=5)
+
+        return 'Retrain efectuado'

@@ -230,3 +230,4 @@ def one_hot(softmax_vector_output):
     one_hot_vector[np.argmax(softmax_vector_output, axis=0)] = 1.0
 
     return one_hot_vector
+
