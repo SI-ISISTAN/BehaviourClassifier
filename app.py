@@ -11,7 +11,7 @@ app.config["JSON_SORT_KEYS"] = False
 
 @app.route('/')
 def home():
-    return jsonify(mensaje='que onda bigote')
+    return jsonify(mensaje='server funcionando')
 
 
 @app.route('/clasificar', methods=['GET'])
@@ -31,6 +31,7 @@ def clasificar():
 def reclasificar():
     mensaje_clasificar = request.args.get('mensaje', default='', type=str)
     conducta = request.args.get('conducta', default=0, type=int)
+    epochs = request.args.get('epochs', default=1, type=int)
 
     if conducta == 0:
         return jsonify(error='Se debe proveer una conducta válida')
@@ -38,8 +39,16 @@ def reclasificar():
     return jsonify(
         mensaje=mensaje_clasificar,
         conducta_correcta=conducta,
-        resultado=neuralnet.retrain(mensaje_clasificar, conducta)
+        resultado=neuralnet.retrain(mensaje_clasificar, conducta, epochs)
     )
 
 
-app.run(host=conf.server.get('address'), port=conf.server.get('port'))
+app.run(
+    host=conf.server.get('address'),
+    port=conf.server.get('port')
+)
+
+# app.run(
+#     host='localhost',
+# )
+

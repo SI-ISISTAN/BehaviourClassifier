@@ -1,0 +1,17 @@
+# Para ver las imágenes creadas
+docker images
+
+# Para ver los contenedores corriendo
+docker ps
+
+# Para matar un contenedor corriendo
+docker kill <id_container>
+
+# Entrar al bash de la imagen
+docker run --rm -it --entrypoint=/bin/bash clasificador
+
+# Construir la imagen
+docker build -t clasificador .
+
+# Correr la imagen
+docker run -p 8080:8080 clasificador

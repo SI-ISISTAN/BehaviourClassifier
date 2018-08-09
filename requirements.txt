@@ -1,0 +1,8 @@
+flask==0.12.2
+h5py==2.7.1
+numpy==1.14.0
+keras==2.1.5
+tensorflow==1.2.1
+nltk==3.2.5
+num2words
+scikit-learn==0.19.1

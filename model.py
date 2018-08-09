@@ -101,37 +101,19 @@ class IPANeuralNet:
 
         resultado['categoria'] = reaccion
         resultado['conducta'] = self.categorias[index_reaccion]['conductas'][index_conducta]
-
         return resultado
 
-    def retrain(self, raw_text, conducta):
-
-        """ Implementar lo siguiente:
-
-            clf_reacciones.compile(optimizer='adadelta', loss='categorical_crossentropy')
-            clf_conductas.compile(optimizer='adadelta', loss='categorical_crossentropy')
-
-            USAR UN DICCIONARIO PARA:
-                - Mapear cada conducta con una reacción
-                - Mapear cada conducta con su onehot_vector
-                - Mapear cada reacción con su onehot_vector
-
-            clf_reacciones.fit(embedding, label_reaccion)
-            clf_conductas.fit(embedding, label_conducta)
-
-        """
-
-        print('RETRAIN (raw_text, conducta) -> (%s, %s)' % (raw_text, conducta))
+    def retrain(self, raw_text, conducta, epochs):
 
         reaccion, clf_conductas, onehot_reaccion, onehot_conducta = self.mapeo_categoria_reaccion[conducta]
         embedding = preprocessing.get_embedding_from_sentence(raw_text, self.embeddings)
 
         # Recompilo y reentreno el clasificador de la conducta asociada a la reacción
         # clf_conductas.compile(optimizer='adadelta', loss='categorical_crossentropy')
-        clf_conductas.fit(embedding, onehot_conducta, epochs=5)
+        clf_conductas.fit(embedding, onehot_conducta, epochs=epochs, verbose=0)
 
         # Recompilo y reentreno el clasificador de las reacciones
         # self.clf_reacciones.compile(optimizer='adadelta', loss='categorical_crossentropy')
-        self.clf_reacciones.fit(embedding, onehot_reaccion, epochs=5)
+        self.clf_reacciones.fit(embedding, onehot_reaccion, epochs=epochs, verbose=0)
 
         return 'Retrain efectuado'

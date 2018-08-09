@@ -8,8 +8,9 @@ directories = {
     'db_embeddings': 'embeddings.db'
 }
 
+# Hay que poner esa dirección para que la tome como localhost
 server = {
-    'address': 'localhost',
+    'address': '0.0.0.0',
     'port': 8080
 }
 

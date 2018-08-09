@@ -5,7 +5,7 @@ import numpy as np
 class EmbeddingDatabase:
 
     def __init__(self, txt_dir):
-        self.connection = sqlite3.connect(txt_dir)
+        self.connection = sqlite3.connect(txt_dir, check_same_thread=False)
         self.cursor = self.connection.cursor()
 
     def save_embs_to_database(self):
