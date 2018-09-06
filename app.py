@@ -1,7 +1,10 @@
 from flask import Flask, jsonify, request
 from model import IPANeuralNet
+from io import StringIO
 
 import configuration as conf
+
+import pandas as pd
 
 neuralnet = IPANeuralNet(conf.directories)
 
@@ -40,6 +43,18 @@ def reclasificar():
         mensaje=mensaje_clasificar,
         conducta_correcta=conducta,
         resultado=neuralnet.retrain(mensaje_clasificar, conducta, epochs)
+    )
+
+
+@app.route('/clasificarlote', methods=['POST'])
+def clasificar_lote():
+    csv = StringIO(request.get_data().decode('utf-8'))
+
+    df = pd.read_csv(csv)
+    print(df)
+
+    return jsonify(
+        mensaje='CSV Recibido'
     )
 
 
