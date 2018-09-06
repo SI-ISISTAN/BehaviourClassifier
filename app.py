@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from model import IPANeuralNet
 from io import StringIO
 
@@ -32,18 +32,29 @@ def clasificar():
 
 @app.route('/reclasificar', methods=['POST'])
 def reclasificar():
-    mensaje_clasificar = request.args.get('mensaje', default='', type=str)
-    conducta = request.args.get('conducta', default=0, type=int)
-    epochs = request.args.get('epochs', default=1, type=int)
+    csv = StringIO(request.get_data().decode('utf-8'))
 
-    if conducta == 0:
-        return jsonify(error='Se debe proveer una conducta válida')
+    mensajes_clasificar = pd.read_csv(csv)
 
-    return jsonify(
-        mensaje=mensaje_clasificar,
-        conducta_correcta=conducta,
-        resultado=neuralnet.retrain(mensaje_clasificar, conducta, epochs)
+    headers_necesarios = ['id_sesion', 'timestamp', 'integrante', 'mensaje']
+
+    headers = list(mensajes_clasificar.columns)
+    headers = list(filter(lambda col: col in headers_necesarios, headers))
+
+    if len(headers) != 4:
+        return 'Se necesitan los siguientes encabezados: %s' % headers_necesarios
+
+    resultado = pd.DataFrame(
+        list(map(lambda msg: neuralnet.make_prediction(msg), mensajes_clasificar['mensaje'].values))
     )
+
+    mensajes_clasificar['categoria'] = pd.Series(resultado['categoria'].values)
+    mensajes_clasificar['conducta'] = pd.Series(resultado['conducta'].values)
+
+    output = StringIO()
+    mensajes_clasificar.to_csv(output, index=False)
+
+    return Response(output.getvalue(), mimetype='text/csv')
 
 
 @app.route('/clasificarlote', methods=['POST'])
