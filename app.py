@@ -74,7 +74,3 @@ app.run(
     port=conf.server.get('port')
 )
 
-# app.run(
-#     host='localhost',
-# )
-

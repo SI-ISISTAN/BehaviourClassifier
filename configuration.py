@@ -11,7 +11,7 @@ directories = {
 # Hay que poner esa dirección para que la tome como localhost
 server = {
     'address': '0.0.0.0',
-    'port': 8080
+    'port': 8083
 }
 
 
