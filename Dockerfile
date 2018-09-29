@@ -1,5 +1,9 @@
 FROM python:3.6.4
 
+ENV FLASK_APP serverprueba.py
+ENV FLASK_ENV development
+ENV FLASK_DEBUG 0
+
 WORKDIR /app
 
 RUN mkdir -p /app/result-studio/clasificador-reacciones_49
@@ -12,6 +16,7 @@ RUN mkdir -p /app/lib
 ADD requirements.txt /app/
 ADD embeddings.db /app/
 ADD app.py /app/
+ADD serverprueba.py /app/
 ADD configuration.py /app/
 ADD model.py /app/
 ADD preprocessing.py /app/
@@ -25,5 +30,10 @@ ADD result-studio/clasificador-conductas-individuales/responde/model.h5 /app/res
 ADD lib /app/lib
 
 RUN pip install -r requirements.txt
-ENTRYPOINT ["python"]
-CMD ["app.py"]
+ENTRYPOINT ["flask", "run"]
+CMD ["--host=0.0.0.0", "--port=8083"]
+
+EXPOSE 8083
+
+#ENTRYPOINT ["python"]
+#CMD ["app.py"]

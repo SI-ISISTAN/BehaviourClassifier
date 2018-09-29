@@ -11,7 +11,11 @@ neuralnet = IPANeuralNet(conf.directories)
 
 @app.route('/clasificar_csv', methods=['POST'])
 def clasificar_csv():
-    raw_text = request.files['csv_file'].stream.read().decode('utf-8')
+    file = request.files['csv_file'].stream.read()
+
+    # raw_text = file.decode('utf-8')
+    raw_text = file.decode('ISO-8859-1')
+
     cantidad_mensajes = int(request.args.get('cantidad_mensajes'))
 
     csv = StringIO(raw_text)
@@ -19,7 +23,7 @@ def clasificar_csv():
     if cantidad_mensajes == -1:
         cantidad_mensajes = None
 
-    mensajes_clasificar = pd.read_csv(csv, nrows=cantidad_mensajes)
+    mensajes_clasificar = pd.read_csv(csv, nrows=cantidad_mensajes, dtype=str)
 
     headers_necesarios = ['chatId', 'timestamp', 'integrante', 'mensaje']
 

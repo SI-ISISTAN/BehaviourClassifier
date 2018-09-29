@@ -126,7 +126,10 @@ def obtain_embeddings_from_conversation(messages, embeddings_db):
                             return np.zeros((300,))
 
     def obtain_embeddings_from_sentence(sentence):
-        return list(map(lambda word: get_embedding(word), sentence.split()))
+        try:
+            return list(map(lambda word: get_embedding(word), str(sentence).split()))
+        except AttributeError:
+            print(sentence)
 
     return list(map(lambda msg: obtain_embeddings_from_sentence(msg), messages)), palabras_no_encontradas
 
