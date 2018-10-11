@@ -10,6 +10,15 @@ class IPANeuralNet:
         self.clf_reacciones = load_model(directories.get('clf_reacciones'))
         self.clf_reacciones.compile(optimizer='adadelta', loss='categorical_crossentropy')
 
+        self.clf_reacciones_plain = load_model(directories.get('clf_reacciones_plain'))
+        self.clf_reacciones_plain.compile(optimizer='adadelta', loss='categorical_crossentropy')
+
+        self.clf_reacciones_cnn = load_model(directories.get('clf_reacciones_cnn'))
+        self.clf_reacciones_cnn.compile(optimizer='adadelta', loss='categorical_crossentropy')
+
+        self.clf_reacciones_rnn = load_model(directories.get('clf_reacciones_rnn'))
+        self.clf_reacciones_rnn.compile(optimizer='adam', loss='categorical_crossentropy')
+
         self.clf_positiva = load_model(directories.get('clf_positiva'))
         self.clf_positiva.compile(optimizer='adadelta', loss='categorical_crossentropy')
 
@@ -21,6 +30,12 @@ class IPANeuralNet:
 
         self.clf_responde = load_model(directories.get('clf_responde'))
         self.clf_responde.compile(optimizer='adadelta', loss='categorical_crossentropy')
+
+        self.clasificadores_reacciones = {
+            'plain': self.clf_reacciones_plain,
+            'cnn': self.clf_reacciones_cnn,
+            'rnn': self.clf_reacciones_rnn
+        }
 
         # (conducta) -> (reaccion, clasificador_conducta, onehot_reaccion, onehot_conducta)
         self.mapeo_categoria_reaccion = {
@@ -78,14 +93,18 @@ class IPANeuralNet:
             }
         }
 
-    def make_prediction(self, raw_text):
+    def make_prediction(self, raw_text, nn_type):
         resultado = {}
 
         # Genero el embedding asociado al texto plano
         embedding = preprocessing.get_embedding_from_sentence(raw_text, self.embeddings)
 
+        # Obtengo el tipo de clasificador solicitado
+        clasificador_reacciones = self.clasificadores_reacciones[nn_type]
+
         # Obtengo la predicción de la REACCION
-        softmax_prediction_reaccion = np.reshape(self.clf_reacciones.predict(embedding), (4,))
+        softmax_prediction_reaccion = np.reshape(clasificador_reacciones.predict(embedding), (4,))
+        # softmax_prediction_reaccion = np.reshape(self.clf_reacciones.predict(embedding), (4,))
         onehot_prediction_reaccion = preprocessing.one_hot(softmax_prediction_reaccion)
         index_reaccion = int(np.argmax(onehot_prediction_reaccion))
 

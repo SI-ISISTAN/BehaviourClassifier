@@ -9,11 +9,10 @@ app = Flask(__name__)
 neuralnet = IPANeuralNet(conf.directories)
 
 
-@app.route('/clasificar_csv', methods=['POST'])
-def clasificar_csv():
+@app.route('/clasificar_csv/<nn_type>', methods=['POST'])
+def clasificar_csv(nn_type):
     file = request.files['csv_file'].stream.read()
 
-    # raw_text = file.decode('utf-8')
     raw_text = file.decode('ISO-8859-1')
 
     cantidad_mensajes = int(request.args.get('cantidad_mensajes'))
@@ -35,10 +34,9 @@ def clasificar_csv():
 
     def predict(msg):
         print('clasificó')
-        return neuralnet.make_prediction(msg)
+        return neuralnet.make_prediction(msg, nn_type)
 
     resultado = pd.DataFrame(
-        # list(map(lambda msg: neuralnet.make_prediction(msg), mensajes_clasificar['mensaje'].values))
         list(map(lambda msg: predict(msg), mensajes_clasificar['mensaje'].values))
     )
 
@@ -49,11 +47,6 @@ def clasificar_csv():
     mensajes_clasificar.to_csv(output, index=False, na_rep='null')
 
     return Response(output.getvalue(), mimetype='text/csv')
-
-
-# @app.route('/clasificar_arff', methods=['POST'])
-# def clasificar_arff():
-#     arff = StringIO(request.get_data().decode('utf-8'))
 
 
 if __name__ == '__main__':
