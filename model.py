@@ -19,6 +19,9 @@ class IPANeuralNet:
         self.clf_reacciones_rnn = load_model(directories.get('clf_reacciones_rnn'))
         self.clf_reacciones_rnn.compile(optimizer='adam', loss='categorical_crossentropy')
 
+        self.clf_reacciones_crnn = load_model(directories.get('clf_reacciones_crnn'))
+        self.clf_reacciones_crnn.compile(optimizer='adam', loss='categorical_crossentropy')
+
         self.clf_positiva = load_model(directories.get('clf_positiva'))
         self.clf_positiva.compile(optimizer='adadelta', loss='categorical_crossentropy')
 
@@ -34,7 +37,8 @@ class IPANeuralNet:
         self.clasificadores_reacciones = {
             'plain': self.clf_reacciones_plain,
             'cnn': self.clf_reacciones_cnn,
-            'rnn': self.clf_reacciones_rnn
+            'rnn': self.clf_reacciones_rnn,
+            'crnn': self.clf_reacciones_crnn
         }
 
         # (conducta) -> (reaccion, clasificador_conducta, onehot_reaccion, onehot_conducta)

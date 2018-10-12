@@ -11,6 +11,9 @@ RUN mkdir -p /app/result-studio/clasificador-conductas-individuales/positiva
 RUN mkdir -p /app/result-studio/clasificador-conductas-individuales/negativa
 RUN mkdir -p /app/result-studio/clasificador-conductas-individuales/pregunta
 RUN mkdir -p /app/result-studio/clasificador-conductas-individuales/responde
+RUN mkdir -p /app/result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-plain_2
+RUN mkdir -p /app/result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-cnn_19
+RUN mkdir -p /app/result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-rnn_66
 RUN mkdir -p /app/lib
 
 ADD requirements.txt /app/
@@ -27,6 +30,9 @@ ADD result-studio/clasificador-conductas-individuales/positiva/model.h5 /app/res
 ADD result-studio/clasificador-conductas-individuales/negativa/model.h5 /app/result-studio/clasificador-conductas-individuales/negativa/model.h5
 ADD result-studio/clasificador-conductas-individuales/pregunta/model.h5 /app/result-studio/clasificador-conductas-individuales/pregunta/model.h5
 ADD result-studio/clasificador-conductas-individuales/responde/model.h5 /app/result-studio/clasificador-conductas-individuales/responde/model.h5
+ADD result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-plain_2/model.h5 /app/result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-plain_2/model.h5
+ADD result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-cnn_19/model.h5 /app/result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-cnn_19/model.h5
+ADD result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-rnn_66/model.h5 /app/result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-rnn_66/model.h5
 ADD lib /app/lib
 
 RUN pip install -r requirements.txt
