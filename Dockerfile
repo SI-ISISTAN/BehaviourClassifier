@@ -14,6 +14,7 @@ RUN mkdir -p /app/result-studio/clasificador-conductas-individuales/responde
 RUN mkdir -p /app/result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-plain_2
 RUN mkdir -p /app/result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-cnn_19
 RUN mkdir -p /app/result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-rnn_66
+RUN mkdir -p /app/result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-crnn_83
 RUN mkdir -p /app/lib
 
 ADD requirements.txt /app/
@@ -33,6 +34,7 @@ ADD result-studio/clasificador-conductas-individuales/responde/model.h5 /app/res
 ADD result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-plain_2/model.h5 /app/result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-plain_2/model.h5
 ADD result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-cnn_19/model.h5 /app/result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-cnn_19/model.h5
 ADD result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-rnn_66/model.h5 /app/result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-rnn_66/model.h5
+ADD result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-crnn_83/model.h5 /app/result-studio/clasificadores-nuevos/fserrano-clasificador-reacciones-rnn_83/model.h5
 ADD lib /app/lib
 
 RUN pip install -r requirements.txt
