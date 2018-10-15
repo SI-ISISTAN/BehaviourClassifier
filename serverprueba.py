@@ -16,6 +16,7 @@ def clasificar_csv(nn_type):
     raw_text = file.decode('ISO-8859-1')
 
     cantidad_mensajes = int(request.args.get('cantidad_mensajes'))
+    integrante_clasificar = request.args.get('integrante')
 
     csv = StringIO(raw_text)
 
@@ -23,6 +24,12 @@ def clasificar_csv(nn_type):
         cantidad_mensajes = None
 
     mensajes_clasificar = pd.read_csv(csv, nrows=cantidad_mensajes, dtype=str)
+
+    if integrante_clasificar is not None and integrante_clasificar is not '':
+        mensajes_clasificar = pd.DataFrame(
+            mensajes_clasificar[mensajes_clasificar['integrante'] == integrante_clasificar],
+            dtype=str
+        )
 
     headers_necesarios = ['chatId', 'timestamp', 'integrante', 'mensaje']
 
@@ -42,6 +49,10 @@ def clasificar_csv(nn_type):
 
     mensajes_clasificar['categoria'] = pd.Series(resultado['categoria'].values)
     mensajes_clasificar['conducta'] = pd.Series(resultado['conducta'].values)
+
+    if integrante_clasificar is not None and integrante_clasificar is not '':
+        mensajes_clasificar['categoria'] = resultado['categoria'].values
+        mensajes_clasificar['conducta'] = resultado['conducta'].values
 
     output = StringIO()
     mensajes_clasificar.to_csv(output, index=False, na_rep='null')
