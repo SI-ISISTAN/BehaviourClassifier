@@ -176,6 +176,7 @@ def get_embedding_from_sentence(sentence, embeddings_db, vectorizer=None):
         for i in range(0, len(sentence_tfidf)):
             sentence_embedding[0][i] = np.multiply(sentence_embedding[0][i], sentence_tfidf[i])
 
+    # print(sentence_embedding, '\n')
     final_embedding = np.mean(np.vstack(sentence_embedding[0]), axis=0).reshape(1, 300)
 
     return final_embedding
