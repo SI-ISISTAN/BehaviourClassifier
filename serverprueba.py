@@ -13,7 +13,6 @@ neuralnet = IPANeuralNet(conf.directories)
 def clasificar_csv(nn_type):
     file = request.files['csv_file'].stream.read()
 
-    # raw_text = file.decode('ISO-8859-1')
     raw_text = file.decode('utf-8')
 
     cantidad_mensajes = int(request.args.get('cantidad_mensajes'))
@@ -40,6 +39,7 @@ def clasificar_csv(nn_type):
         ).reset_index(drop=True)
 
     # Filtro los mensajes vacíos
+    mensajes_clasificar = mensajes_clasificar.dropna()
     mensajes_clasificar = mensajes_clasificar[~mensajes_clasificar['mensaje'].str.isspace()]
 
     headers_necesarios = ['chatId', 'timestamp', 'integrante', 'mensaje']
